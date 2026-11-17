@@ -1,0 +1,656 @@
+{
+  "name": "Automatización clientes",
+  "nodes": [
+    {
+      "parameters": {
+        "text": "={{ $json.chatInput }}",
+        "guardrails": {
+          "jailbreak": {
+            "value": {
+              "threshold": 0.7
+            }
+          },
+          "pii": {
+            "value": {
+              "type": "selected",
+              "entities": [
+                "CREDIT_CARD",
+                "EMAIL_ADDRESS",
+                "IBAN_CODE",
+                "ES_NIF",
+                "ES_NIE"
+              ]
+            }
+          },
+          "topicalAlignment": {
+            "value": {
+              "threshold": 0.7,
+              "prompt": "You are a content analysis system that determines if text stays on topic.\n\nBUSINESS SCOPE: Consultas de clientes y empleados sobre pedidos de un taller de reparación de calzado, copia de llaves y cerrajería (consulta de estado, precio y servicio, actualización del estado de un pedido y creación de pedidos nuevos). También están permitidos saludos, despedidas y agradecimientos.\n\nDetermine if the text stays within the defined business scope. Flag any content\nthat strays from the allowed topics."
+            }
+          }
+        }
+      },
+      "id": "b992bd0a-11a0-4f59-8d04-2f6323dfbacd",
+      "name": "Guardrails",
+      "type": "@n8n/n8n-nodes-langchain.guardrails",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-haiku-5-5"
+        },
+        "options": {}
+      },
+      "id": "b3c2167d-d3ee-4986-9e5a-0490638c8e98",
+      "name": "Claude Haiku (vigilante)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        -320,
+        608
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('When chat message received').item.json.sessionId }}"
+      },
+      "id": "a53482fc-e479-4012-9333-0cd5befe0317",
+      "name": "Simple Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        48,
+        608
+      ]
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Consulta UN pedido del taller por su ID (formato P001). Devuelve cliente, teléfono, servicio, estado, precio y clasificación.",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 695869992,
+          "mode": "list",
+          "cachedResultName": "pedidos"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "id",
+              "lookupValue": "={{ $fromAI('id_pedido', 'ID del pedido, por ejemplo P003', 'string') }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7728d17d-c72b-4487-b3d1-90ee7836d9f0",
+      "name": "Consultar pedidos",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        208,
+        608
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Cambia el estado de un pedido. Solo modifica la columna estado. Estados válidos: Pendiente, En curso, Listo.",
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "TU_GOOGLE_SHEET_ID",
+          "__regex": "https:\\/\\/(?:drive|docs)\\.google\\.com(?:\\/.*|)\\/d\\/([0-9a-zA-Z\\-_]+)(?:\\/.*|)"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "pedidos"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $fromAI('id_pedido', 'ID del pedido a modificar, por ejemplo P001', 'string') }}",
+            "estado": "={{ $fromAI('nuevo_estado', 'Nuevo estado: Pendiente, En curso o Listo', 'string') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cliente",
+              "displayName": "cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "servicio",
+              "displayName": "servicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "precio",
+              "displayName": "precio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "clasificacion",
+              "displayName": "clasificacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fb30e6b4-74e4-4923-89e4-d05e46b4f786",
+      "name": "Actualizar estado",
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.5,
+      "position": [
+        416,
+        608
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1643012698,
+          "mode": "list",
+          "cachedResultName": "log_auditoria"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "fecha": "={{ $now.toISO() }}",
+            "sesion": "={{ $('When chat message received').item.json.sessionId }}",
+            "pregunta": "={{ $('When chat message received').item.json.chatInput }}",
+            "herramientas": "={{ ($('AI Agent').item.json.intermediateSteps || []).map(s => s.action.tool).join(', ') || 'ninguna' }}",
+            "respuesta": "={{ $('AI Agent').item.json.output }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fecha",
+              "displayName": "fecha",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sesion",
+              "displayName": "sesion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "pregunta",
+              "displayName": "pregunta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "herramientas",
+              "displayName": "herramientas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "respuesta",
+              "displayName": "respuesta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "08e53307-6174-4d3e-9bb4-bef37c63b415",
+      "name": "Registro auditoría",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        400,
+        336
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseMode": "responseNodes"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -640,
+        384
+      ],
+      "id": "4210db0d-c218-4933-b610-c6f93c7656cd",
+      "name": "When chat message received",
+      "webhookId": "ddc49ab6-2016-4cc8-b818-40c194e04f73"
+    },
+    {
+      "parameters": {
+        "message": "={{ $('AI Agent').item.json.output }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.3,
+      "position": [
+        608,
+        336
+      ],
+      "id": "70bd2029-4c8f-4d7c-889d-1639485dc75c",
+      "name": "Chat1",
+      "webhookId": "f131dc9d-53a3-429d-863c-cd2b2e768b3a"
+    },
+    {
+      "parameters": {
+        "message": "Lo siento, no puedo procesar esa petición: incumple la política de uso de datos del taller.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chat",
+      "typeVersion": 1.3,
+      "position": [
+        -160,
+        896
+      ],
+      "id": "175bbbd4-7a8e-40ad-948b-dd1d46f4c329",
+      "name": "Chat2",
+      "webhookId": "58dc4e36-a6b4-4588-abaa-a63a7b6a0673"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('When chat message received').item.json.chatInput }}",
+        "options": {
+          "systemMessage": "Eres el asistente de gestión de pedidos de un taller de reparación de calzado, copia de llaves y cerrajería.\n\nPOLÍTICA DE DATOS (obligatoria):\n1. Solo puedes usar datos obtenidos con tus herramientas. Nunca inventes información.\n2. Solo puedes consultar pedidos por su ID (formato P001). Si el usuario no da el ID, pídeselo.\n3. Puedes mostrar el teléfono del cliente completo cuando consultes un pedido.\n4. Para cambiar el estado de un pedido usa \"Actualizar estado\". Estados válidos: Pendiente, En curso, Listo. Esa acción requiere aprobación humana.\n5. Para crear un pedido nuevo usa \"Crear pedido\". Necesitas ID (formato P000), cliente, teléfono, servicio, estado y precio; si falta algo, pídelo. Antes de crearlo, usa \"Consultar pedidos\" con ese ID: si ya existe, avisa y no lo crees. No pidas ni guardes otros datos personales (email, DNI/NIE, tarjeta, IBAN).\n6. No puedes borrar registros, cambiar precios de pedidos existentes ni exportar listados de clientes.\n7. Si una petición incumple esta política, explícalo brevemente y no la ejecutes.\nResponde en español, de forma breve.",
+          "returnIntermediateSteps": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        32,
+        336
+      ],
+      "id": "969c4c90-8ffc-4d1b-abed-17d27846bfda",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-6",
+          "cachedResultName": "Claude Sonnet 4.6"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.5,
+      "position": [
+        -80,
+        640
+      ],
+      "id": "a3039538-27b8-44b9-ab56-91a8a8e7f50d",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Crea un pedido nuevo en la hoja de pedidos. Úsala solo cuando el usuario haya dado ID, cliente, teléfono, servicio, estado y precio, y después de comprobar con Consultar pedidos que ese ID no existe.",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "TU_GOOGLE_SHEET_ID",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 695869992,
+          "mode": "list",
+          "cachedResultName": "pedidos"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "id": "={{ $fromAI('id', 'ID del pedido con formato P seguido de 3 cifras, p. ej. P006', 'string') }}",
+            "cliente": "={{ $fromAI('cliente', 'Nombre del cliente', 'string') }}",
+            "servicio": "={{ $fromAI('servicio', 'Servicio solicitado, p. ej. reparación de suela o copia de llave', 'string') }}",
+            "estado": "={{ $fromAI('estado', 'Estado del pedido: Pendiente, En curso o Listo', 'string') }}",
+            "precio": "={{ $fromAI('precio', 'Precio en euros, solo el número', 'number') }}",
+            "clasificacion": "Confidencial",
+            "telefono": "={{ $fromAI('telefono', 'Teléfono del cliente (solo números, 9 cifras)', 'string') }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cliente",
+              "displayName": "cliente",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "telefono",
+              "displayName": "telefono",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "servicio",
+              "displayName": "servicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "estado",
+              "displayName": "estado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "precio",
+              "displayName": "precio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "clasificacion",
+              "displayName": "clasificacion",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        352,
+        784
+      ],
+      "id": "7b2f4869-d968-4383-b9a2-820dc0e961a6",
+      "name": "Crear pedido",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Guardrails": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Chat2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Haiku (vigilante)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Guardrails",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar pedidos": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Actualizar estado": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registro auditoría": {
+      "main": [
+        [
+          {
+            "node": "Chat1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Guardrails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Registro auditoría",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear pedido": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "tags": []
+}

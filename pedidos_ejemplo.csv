@@ -1,0 +1,6 @@
+id,cliente,telefono,servicio,estado,precio,clasificacion
+P001,Ana López,600111222,Cambio de tapas,Pendiente,12,Confidencial
+P002,Luis Pérez,600333444,Copia llave coche,Listo,45,Confidencial
+P003,Marta Rey,600555666,Costura bota,En curso,18,Confidencial
+P004,Xosé Vilar,600777888,Apertura puerta,Listo,70,Confidencial
+P005,Carmen Novo,600999000,Tinte zapatos,Pendiente,15,Confidencial
