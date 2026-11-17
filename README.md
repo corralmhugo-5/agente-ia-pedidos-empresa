@@ -15,10 +15,15 @@ Crear un pedido nuevo → "Crea el pedido P006 para X persona, teléfono XXXXXXX
 Paso	Nodo	Qué hace	Principio de gobierno
 
 1	Guardrails (Claude Haiku)	Bloquea jailbreaks, datos personales sensibles en la entrada (tarjeta, email, IBAN, DNI/NIE) y temas fuera del negocio	Seguridad y privacidad
+
 2	AI Agent (Claude Sonnet) + system prompt	Aplica una política de datos escrita: no inventa datos, consulta solo por ID, no borra registros ni exporta listados	Control blando
+
 3	Consultar pedidos	Solo por ID, un pedido cada vez	Minimización de datos por diseño
+
 4	Actualizar estado	Solo puede modificar la columna estado (Pendiente, En curso, Listo)	Mínimo privilegio
+
 5	Crear pedido	Exige todos los datos, comprueba antes que el ID no exista y clasifica la fila como Confidencial	Calidad e integridad del dato
+
 6	Registro auditoría	Guarda fecha, sesión, pregunta, herramientas usadas y respuesta	Trazabilidad
 
 Decisión de diseño — teléfono del cliente: el taller necesita el teléfono para avisar al cliente, así que se permite registrarlo y consultarlo. A cambio, cada fila se etiqueta con la clasificación Confidencial y todo acceso queda en el registro de auditoría.
